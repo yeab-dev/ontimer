@@ -1,0 +1,9 @@
+{
+    "name": "ontimer",
+    "description": "A tool that helps you track your time on online meetings",
+    "version": "1.0",
+    "manifest_version": 3,
+    "action": {
+        "default_popup": "popup/popup.html"
+    }
+}

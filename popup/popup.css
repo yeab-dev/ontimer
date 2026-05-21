@@ -1,0 +1,36 @@
+body {
+    margin: 0;
+    width: 300px;
+    height: 300px;
+    background-color: #FFE8E8;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    border: 5px solid #910000;
+}
+
+#title {
+    margin: 0;
+    font-size: 23px;
+    text-align: center;
+    font-weight: 600;
+}
+
+#description {
+    font-size: 14px;
+    text-align: center;
+    margin: 0 20px;
+    color: #795454;
+}
+
+#create-timer {
+    background-color: #910000;
+    color: #FFE8E8;
+    font-size: 20px;
+    padding: 12px;
+    width: 200px;
+    margin-bottom: 20px;
+    border-radius: 15px;
+
+}
