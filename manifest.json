@@ -3,7 +3,18 @@
     "description": "A tool that helps you track your time on online meetings",
     "version": "1.0",
     "manifest_version": 3,
+    "icons": {
+        "16": "assets/icons/16x16.png",
+        "32": "assets/icons/32x32.png",
+        "48": "assets/icons/48x48.png",
+        "128": "assets/icons/128x128.png"
+    },
     "action": {
-        "default_popup": "popup/popup.html"
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "assets/icons/16x16.png",
+            "32": "assets/icons/32x32.png",
+            "48": "assets/icons/48x48.png"
+        }
     }
 }
