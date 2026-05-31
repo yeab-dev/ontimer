@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Form</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="form_page_style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Telex&display=swap" rel="stylesheet">
+    <script src="form_page.js" defer></script>
+</head>
+
+<body>
+    <div id="form-card">
+        <img src="./assets/images/logo.png" alt="a dark red timer icon" id="logo">
+        <p id="title">OnTimer</p>
+        <p id="title-description">Master your meeting time by creating structured segments for your presentation</p>
+        <div id="segments">
+            <div class="segment-group">
+                <div class="segment-time-group">
+                    <input type="number" step="1" min="1" value="10" data-old-value="10" aria-label="Duration">
+                    <span>min</span>
+                </div>
+                <div class="segment-name-group">
+                    <input type="text" placeholder="Topic" aria-label="Topic" />
+                </div>
+                <i class="delete fa-solid fa-trash-can"></i>
+            </div>
+        </div>
+        <button type="button" id="add-segment">Add Segment</button>
+        <div id="total-duration-and-action-button">
+            <div id="total-duration">Total Duration:
+                <p id="duration"> 10 minutes</p>
+            </div>
+            <button type="button" id="create-timer-button">Create Timer</button>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
