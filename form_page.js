@@ -1,7 +1,7 @@
 import { saveSegments, getSegments } from "./local_storage.js"
 let totalTime = 0;
 
-let segmentsState = getSegments();
+let segmentsState = await getSegments();
 
 const createTimerButton = document.getElementById('create-timer-button');
 const segments = document.getElementById("segments");

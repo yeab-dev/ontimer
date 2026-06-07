@@ -1,5 +1,131 @@
-function showProgressIndicator() {
-    const meetingControllerCard = document.createElement('div');
+console.log("EXTENSION LOADED");
+async function getSegments() {
+    const result = await chrome.storage.local.get(["segments"]);
+    return result.segments || [];
+}
+/* =========================
+   STATE
+========================= */
+
+let currentSegmentIndex = 0;
+let remainingSeconds = 0;
+let intervalId = null;
+
+const ui = {
+    topic: null,
+    timer: null,
+    progressBar: null,
+    playButton: null,
+    previousButton: null,
+    nextButton: null,
+};
+
+/* =========================
+   RENDERING
+========================= */
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = remainingSeconds % 60;
+
+    ui.timer.textContent =
+        `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+async function renderSegment() {
+    console.log("RENDERING SEGMENT");
+    const segments = await getSegments()
+    const segment = segments[currentSegmentIndex];
+
+    ui.topic.textContent = segment.topic;
+
+    remainingSeconds = segment.duration * 60;
+
+    updateTimerDisplay();
+
+    resetProgressBar(segment.duration);
+}
+
+/* =========================
+   TIMER
+========================= */
+
+async function startTimer() {
+    if (intervalId) return;
+
+    const segments = await getSegments()
+    const segment = segments[currentSegmentIndex];
+
+    startProgressBar(segment.duration);
+
+    intervalId = setInterval(() => {
+        remainingSeconds--;
+
+        updateTimerDisplay();
+
+        if (remainingSeconds <= 0) {
+            nextSegment();
+        }
+    }, 1000);
+}
+
+function pauseTimer() {
+    clearInterval(intervalId);
+    intervalId = null;
+}
+
+async function nextSegment() {
+    pauseTimer();
+
+    currentSegmentIndex++;
+
+    const segments = await getSegments()
+    if (currentSegmentIndex >= segments.length) {
+        alert("Meeting complete!");
+        return;
+    }
+
+    renderSegment();
+    startTimer();
+}
+
+function previousSegment() {
+    if (currentSegmentIndex === 0) return;
+
+    pauseTimer();
+
+    currentSegmentIndex--;
+
+    renderSegment();
+}
+
+/* =========================
+   PROGRESS BAR
+========================= */
+
+function resetProgressBar(durationMinutes) {
+    ui.progressBar.style.transition = "none";
+    ui.progressBar.style.width = "100%";
+
+    void ui.progressBar.offsetWidth;
+}
+
+function startProgressBar(durationMinutes) {
+    ui.progressBar.style.transition =
+        `width ${durationMinutes * 60}s linear`;
+
+    setTimeout(() => {
+        ui.progressBar.style.width = "0%";
+    }, 50);
+}
+
+/* =========================
+   UI CREATION
+========================= */
+
+function createUI() {
+    const meetingControllerCard = document.createElement("div");
+
     meetingControllerCard.style.position = "fixed";
     meetingControllerCard.style.top = "20px";
     meetingControllerCard.style.left = "50%";
@@ -10,8 +136,10 @@ function showProgressIndicator() {
     meetingControllerCard.style.alignItems = "center";
     meetingControllerCard.style.gap = "10px";
 
-    // Main card
-    const container = document.createElement('div');
+    /* ---------- Main Card ---------- */
+
+    const container = document.createElement("div");
+
     container.style.height = "10vh";
     container.style.width = "22.5vw";
     container.style.backgroundColor = "#FFF9F9";
@@ -21,96 +149,123 @@ function showProgressIndicator() {
     container.style.flexDirection = "column";
     container.style.justifyContent = "center";
 
-    const topic = document.createElement('div');
-    topic.textContent = "Introduction";
+    const topic = document.createElement("div");
     topic.style.fontWeight = "bold";
     topic.style.color = "#910000";
     topic.style.fontSize = "17px";
     topic.style.marginBottom = "5px";
 
-    const timerRow = document.createElement('div');
+    const timerRow = document.createElement("div");
     timerRow.style.display = "flex";
     timerRow.style.justifyContent = "space-between";
     timerRow.style.alignItems = "center";
 
-    const progressBarContainer = document.createElement('div');
+    const progressBarContainer = document.createElement("div");
     progressBarContainer.style.height = "2.5vh";
     progressBarContainer.style.width = "15vw";
     progressBarContainer.style.border = "2px solid #2A0000";
     progressBarContainer.style.borderRadius = "7px";
     progressBarContainer.style.overflow = "hidden";
 
-    const meetingTimerContainer = document.createElement('div');
-    meetingTimerContainer.textContent = "00:15";
-    meetingTimerContainer.style.fontWeight = "bold";
-    meetingTimerContainer.style.fontSize = "17px";
-    meetingTimerContainer.style.height = "3vh";
-    meetingTimerContainer.style.width = "3vw";
-    meetingTimerContainer.style.lineHeight = "3vh";
-    meetingTimerContainer.style.backgroundColor = "#910000";
-    meetingTimerContainer.style.color = "#FFF9F9";
-    meetingTimerContainer.style.textAlign = "center";
-    meetingTimerContainer.style.borderRadius = "5px";
+    const progressBar = document.createElement("div");
+    progressBar.style.height = "100%";
+    progressBar.style.width = "100%";
+    progressBar.style.backgroundColor = "#910000";
+
+    progressBarContainer.appendChild(progressBar);
+
+    const timer = document.createElement("div");
+    timer.style.fontWeight = "bold";
+    timer.style.fontSize = "17px";
+    timer.style.height = "3vh";
+    timer.style.width = "3vw";
+    timer.style.lineHeight = "3vh";
+    timer.style.backgroundColor = "#910000";
+    timer.style.color = "#FFF9F9";
+    timer.style.textAlign = "center";
+    timer.style.borderRadius = "5px";
 
     timerRow.appendChild(progressBarContainer);
-    timerRow.appendChild(meetingTimerContainer);
+    timerRow.appendChild(timer);
 
     container.appendChild(topic);
     container.appendChild(timerRow);
 
-    // Controller card
-    const controllerContainer = document.createElement('div');
-    controllerContainer.style.height = "6vh";
-    controllerContainer.style.width = "7vw";
-    controllerContainer.style.backgroundColor = "#FFF9F9";
-    controllerContainer.style.borderRadius = "20px";
-    controllerContainer.style.padding = "0 15px";
-    controllerContainer.style.display = "flex";
-    controllerContainer.style.justifyContent = "space-evenly";
-    controllerContainer.style.alignItems = "center";
+    /* ---------- Controls ---------- */
 
-    const previousIcon = document.createElement('i');
-    previousIcon.className = "fa-solid fa-circle-chevron-left";
-    previousIcon.style.fontSize = "25px"
-    previousIcon.style.color = "#2A0000"
+    const controls = document.createElement("div");
 
-    const playIcon = document.createElement('i');
-    playIcon.className = "fa-solid fa-circle-play";
-    playIcon.style.fontSize = "25px"
-    playIcon.style.color = "#910000"
+    controls.style.height = "6vh";
+    controls.style.width = "7vw";
+    controls.style.backgroundColor = "#FFF9F9";
+    controls.style.borderRadius = "20px";
+    controls.style.padding = "0 15px";
+    controls.style.display = "flex";
+    controls.style.justifyContent = "space-evenly";
+    controls.style.alignItems = "center";
 
-    const nextIcon = document.createElement('i');
-    nextIcon.className = "fa-solid fa-circle-chevron-right";
-    nextIcon.style.fontSize = "25px"
-    nextIcon.style.color = "#2A0000"
+    const previousButton = document.createElement("i");
+    previousButton.className = "fa-solid fa-circle-chevron-left";
 
-    controllerContainer.appendChild(previousIcon);
-    controllerContainer.appendChild(playIcon);
-    controllerContainer.appendChild(nextIcon);
+    const playButton = document.createElement("i");
+    playButton.className = "fa-solid fa-circle-play";
 
-    // Progress bar
-    const progressBar = document.createElement('div');
-    progressBar.style.height = "100%";
-    progressBar.style.width = "100%";
-    progressBar.style.backgroundColor = "#910000";
-    progressBar.style.transition = "width 60s linear";
+    const nextButton = document.createElement("i");
+    nextButton.className = "fa-solid fa-circle-chevron-right";
 
-    progressBarContainer.appendChild(progressBar);
+    [previousButton, playButton, nextButton].forEach(icon => {
+        icon.style.fontSize = "25px";
+    });
 
-    // Assemble
+    previousButton.style.color = "#2A0000";
+    nextButton.style.color = "#2A0000";
+    playButton.style.color = "#910000";
+
+    controls.appendChild(previousButton);
+    controls.appendChild(playButton);
+    controls.appendChild(nextButton);
+
     meetingControllerCard.appendChild(container);
-    meetingControllerCard.appendChild(controllerContainer);
+    meetingControllerCard.appendChild(controls);
 
     document.body.appendChild(meetingControllerCard);
 
-    setTimeout(() => {
-        progressBar.style.width = "0%";
-    }, 100);
+    /* ---------- Store references ---------- */
+
+    ui.topic = topic;
+    ui.timer = timer;
+    ui.progressBar = progressBar;
+
+    ui.playButton = playButton;
+    ui.previousButton = previousButton;
+    ui.nextButton = nextButton;
+
+    /* ---------- Events ---------- */
+
+    playButton.addEventListener("click", startTimer);
+    previousButton.addEventListener("click", previousSegment);
+    nextButton.addEventListener("click", nextSegment);
+
+    console.log("UI CREATED");
 }
 
-const link = document.createElement('link');
-link.rel = 'stylesheet';
-link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+/* =========================
+   INIT
+========================= */
+
+async function init() {
+    const segments = await getSegments();
+    console.log("Loaded segments", segments)
+    if (segments.length === 0) return;
+    createUI();
+    renderSegment();
+}
+
+const link = document.createElement("link");
+link.rel = "stylesheet";
+link.href =
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css";
+
 document.head.appendChild(link);
 
-showProgressIndicator();
+init();

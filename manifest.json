@@ -16,5 +16,30 @@
             "32": "assets/icons/32x32.png",
             "48": "assets/icons/48x48.png"
         }
-    }
+    },
+    "permissions": [
+        "tabs",
+        "scripting",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://meet.google.com/*"
+    ],
+    "background": {
+        "service_worker": "services/background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://meet.google.com/*"
+            ],
+            "exclude_matches": [
+                "https://meet.google.com/landing"
+            ],
+            "js": [
+                "scripts/content.js"
+            ],
+            "type": "module"
+        }
+    ]
 }
