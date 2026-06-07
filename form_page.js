@@ -1,39 +1,46 @@
-let totalTime = 10;
+import { saveSegments, getSegments } from "./local_storage.js"
+let totalTime = 0;
 
-let segmentsState = JSON.parse(localStorage.getItem("segments")) || [];
+let segmentsState = getSegments();
 
 const createTimerButton = document.getElementById('create-timer-button');
 const segments = document.getElementById("segments");
 const addSegmentButton = document.getElementById("add-segment");
 const durationDisplay = document.getElementById("duration");
 
-function saveToStorage() {
-    localStorage.setItem("segments", JSON.stringify(segmentsState));
+function loadSegments() {
+    if (segmentsState.length !== 0) {
+        segmentsState.forEach(segment => {
+            segments.appendChild(createSegment(segment.duration, segment.topic, false));
+        });
+    }
 }
 
 function renderTotal() {
     durationDisplay.textContent = ` ${totalTime} minutes`;
 }
-
-function createSegment(initialValue = 10) {
+/* =========================
+   CREATE SEGMENT
+========================= */
+function createSegment(duration = 10, topic = "", dirty = true) {
     const div = document.createElement('div');
     const id = crypto.randomUUID();
 
     div.dataset.id = id;
-    div.className = 'segment-group';
+    div.className = dirty ? 'segment-group dirty' : "segment-group";
 
     div.innerHTML = `
         <div class="segment-time-group">
-            <input type="number" min="1" value="${initialValue}" data-old-value="${initialValue}">
+            <input type="number" min="1" value="${duration}" data-old-value="${duration}">
             <span>min</span>
         </div>
         <div class="segment-name-group">
-            <input type="text" placeholder="Topic">
+            <input type="text" placeholder="Topic" value="${topic}">
         </div>
         <i class="fa-solid fa-trash-can delete"></i>
     `;
 
-    totalTime += initialValue;
+    totalTime += duration;
     renderTotal();
 
     return div;
@@ -44,6 +51,12 @@ function createSegment(initialValue = 10) {
 ========================= */
 addSegmentButton.addEventListener('click', () => {
     const allSegments = document.querySelectorAll('.segment-group');
+
+    if (allSegments.length === 0) {
+        segments.appendChild(createSegment());
+        return;
+    }
+
     const lastSegment = allSegments[allSegments.length - 1];
 
     const durationInput = lastSegment.querySelector('input[type="number"]');
@@ -87,13 +100,11 @@ segments.addEventListener('click', (event) => {
 /* =========================
    UPDATE STATE ON INPUT CHANGE
 ========================= */
-segments.addEventListener('change', (event) => {
+segments.addEventListener('input', (event) => {
     const segmentEl = event.target.closest('.segment-group');
     if (!segmentEl) return;
 
-    const id = segmentEl.dataset.id;
-    const segment = segmentsState.find(s => s.id === id);
-    if (!segment) return;
+    segmentEl.classList.add('dirty');
 
     /* ---- duration update ---- */
     if (event.target.type === "number") {
@@ -107,12 +118,12 @@ segments.addEventListener('change', (event) => {
 
         input.dataset.oldValue = newValue;
 
-        segment.duration = newValue;
+        segmentEl.duration = newValue;
     }
 
     /* ---- topic update ---- */
     if (event.target.type === "text") {
-        segment.topic = event.target.value.trim();
+        segmentEl.topic = event.target.value.trim();
     }
 });
 
@@ -138,11 +149,20 @@ createTimerButton.addEventListener('click', () => {
 
         segmentsState.push({ id, duration, topic });
     }
-
-    saveToStorage();
+    const savedText = document.querySelector('.saved');
+    savedText.style.visibility = "visible";
+    setTimeout(() => {
+        savedText.style.visibility = "hidden";
+    }, 2000);
+    saveSegments(segmentsState);
+    document.querySelectorAll('.segment-group').forEach(segment => {
+        segment.classList.remove('dirty');
+    });
 });
 
 /* =========================
    INIT
 ========================= */
 renderTotal();
+loadSegments();
+
