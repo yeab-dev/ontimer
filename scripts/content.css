@@ -1,0 +1,10 @@
+.control-icon {
+    cursor: pointer;
+    font-size: 25px;
+    color: #2A0000;
+    transition: color 0.2s ease;
+}
+
+.control-icon:hover {
+    color: #910000;
+}

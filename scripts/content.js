@@ -1,15 +1,29 @@
 console.log("EXTENSION LOADED");
+
+/* =========================
+   STORAGE
+========================= */
+
 async function getSegments() {
     const result = await chrome.storage.local.get(["segments"]);
     return result.segments || [];
 }
+
 /* =========================
    STATE
 ========================= */
 
+let segments = [];
+
 let currentSegmentIndex = 0;
 let remainingSeconds = 0;
+
 let intervalId = null;
+let isPlaying = false;
+
+/* =========================
+   UI REFS
+========================= */
 
 const ui = {
     topic: null,
@@ -21,7 +35,7 @@ const ui = {
 };
 
 /* =========================
-   RENDERING
+   TIMER DISPLAY
 ========================= */
 
 function updateTimerDisplay() {
@@ -32,29 +46,33 @@ function updateTimerDisplay() {
         `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-async function renderSegment() {
-    console.log("RENDERING SEGMENT");
-    const segments = await getSegments()
+/* =========================
+   RENDER SEGMENT
+========================= */
+
+function renderSegment() {
     const segment = segments[currentSegmentIndex];
+    if (!segment) return;
 
     ui.topic.textContent = segment.topic;
 
     remainingSeconds = segment.duration * 60;
 
     updateTimerDisplay();
-
     resetProgressBar(segment.duration);
 }
 
 /* =========================
-   TIMER
+   TIMER LOGIC
 ========================= */
 
-async function startTimer() {
+function startTimer() {
     if (intervalId) return;
 
-    const segments = await getSegments()
+    isPlaying = true;
+
     const segment = segments[currentSegmentIndex];
+    if (!segment) return;
 
     startProgressBar(segment.duration);
 
@@ -64,29 +82,37 @@ async function startTimer() {
         updateTimerDisplay();
 
         if (remainingSeconds <= 0) {
-            nextSegment();
+            nextSegment(true);
         }
     }, 1000);
 }
 
 function pauseTimer() {
+    isPlaying = false;
+
     clearInterval(intervalId);
     intervalId = null;
 }
 
-async function nextSegment() {
+/* =========================
+   NAVIGATION
+========================= */
+
+function nextSegment(auto = false) {
     pauseTimer();
 
     currentSegmentIndex++;
 
-    const segments = await getSegments()
     if (currentSegmentIndex >= segments.length) {
         alert("Meeting complete!");
         return;
     }
 
     renderSegment();
-    startTimer();
+
+    if (isPlaying || auto) {
+        startTimer();
+    }
 }
 
 function previousSegment() {
@@ -97,13 +123,17 @@ function previousSegment() {
     currentSegmentIndex--;
 
     renderSegment();
+
+    if (isPlaying) {
+        startTimer();
+    }
 }
 
 /* =========================
    PROGRESS BAR
 ========================= */
 
-function resetProgressBar(durationMinutes) {
+function resetProgressBar() {
     ui.progressBar.style.transition = "none";
     ui.progressBar.style.width = "100%";
 
@@ -139,7 +169,6 @@ function createUI() {
     /* ---------- Main Card ---------- */
 
     const container = document.createElement("div");
-
     container.style.height = "10vh";
     container.style.width = "22.5vw";
     container.style.backgroundColor = "#FFF9F9";
@@ -206,20 +235,39 @@ function createUI() {
 
     const previousButton = document.createElement("i");
     previousButton.className = "fa-solid fa-circle-chevron-left";
+    previousButton.classList.add("control-icon")
+    previousButton.style.cursor = "pointer";
+    previousButton.style.fontSize = "25px";
+
 
     const playButton = document.createElement("i");
     playButton.className = "fa-solid fa-circle-play";
+    playButton.classList.add("control-icon")
+    playButton.style.cursor = "pointer";
+    playButton.style.fontSize = "25px";
 
     const nextButton = document.createElement("i");
     nextButton.className = "fa-solid fa-circle-chevron-right";
+    nextButton.classList.add("control-icon")
+    nextButton.style.cursor = "pointer";
+    nextButton.style.fontSize = "25px";
 
-    [previousButton, playButton, nextButton].forEach(icon => {
-        icon.style.fontSize = "25px";
+    /* ---------- Events ---------- */
+
+    playButton.addEventListener("click", () => {
+        if (isPlaying) {
+            pauseTimer();
+            playButton.classList.remove("fa-circle-pause");
+            playButton.classList.add("fa-circle-play");
+        } else {
+            playButton.classList.remove("fa-circle-play");
+            playButton.classList.add("fa-circle-pause");
+            startTimer();
+        }
     });
 
-    previousButton.style.color = "#2A0000";
-    nextButton.style.color = "#2A0000";
-    playButton.style.color = "#910000";
+    previousButton.addEventListener("click", previousSegment);
+    nextButton.addEventListener("click", nextSegment);
 
     controls.appendChild(previousButton);
     controls.appendChild(playButton);
@@ -230,7 +278,7 @@ function createUI() {
 
     document.body.appendChild(meetingControllerCard);
 
-    /* ---------- Store references ---------- */
+    /* ---------- Store UI refs ---------- */
 
     ui.topic = topic;
     ui.timer = timer;
@@ -239,14 +287,6 @@ function createUI() {
     ui.playButton = playButton;
     ui.previousButton = previousButton;
     ui.nextButton = nextButton;
-
-    /* ---------- Events ---------- */
-
-    playButton.addEventListener("click", startTimer);
-    previousButton.addEventListener("click", previousSegment);
-    nextButton.addEventListener("click", nextSegment);
-
-    console.log("UI CREATED");
 }
 
 /* =========================
@@ -254,9 +294,12 @@ function createUI() {
 ========================= */
 
 async function init() {
-    const segments = await getSegments();
-    console.log("Loaded segments", segments)
-    if (segments.length === 0) return;
+    segments = await getSegments();
+
+    console.log("Loaded segments:", segments);
+
+    if (!segments.length) return;
+
     createUI();
     renderSegment();
 }

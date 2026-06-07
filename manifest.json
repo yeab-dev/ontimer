@@ -39,6 +39,9 @@
             "js": [
                 "scripts/content.js"
             ],
+            "css": [
+                "scripts/content.css"
+            ],
             "type": "module"
         }
     ]
